@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:arat2121@localhost:3306/mydb?schema=public"
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  createdAt   DateTime     @default(now())
+  email       String       @unique
+  password    String
+  contactInfo ContactInfo? @relation(name: "UserToContactInfo")
+  universityRecords UniversityRecord[]
+  teamsAsLeader Team[]    @relation("TeamLeader")
+  teams         TeamMember[]
+  tasks         Task[]     @relation("AssignedTasks")
+  assignedTasks Task[]     @relation("TasksAssignedTo")
+  invitations   TeamInvitation[]
+}
+
+model ContactInfo {
+  id        Int    @id
+  firstName String
+  lastName  String
+  phone     String
+  user      User   @relation(name: "UserToContactInfo", fields: [id], references: [id])
+}
+
+model UniversityRecord {
+  id             Int      @id @default(autoincrement())
+  department     String
+  university     String
+  startYear      Int
+  graduationYear Int?
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Team {
+  id            Int          @id @default(autoincrement())
+  name          String
+  leader        User         @relation("TeamLeader", fields: [leaderId], references: [id])
+  leaderId      Int
+  members       TeamMember[]
+  tasks         Task[]
+  invitations   TeamInvitation[]
+}
+
+model TeamMember {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+  team   Team @relation(fields: [teamId], references: [id])
+  teamId Int
+}
+model TeamInvitation {
+  id          Int      @id @default(autoincrement())
+  team        Team     @relation(fields: [teamId], references: [id])
+  teamId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  status      Status   @default(PENDING)
+  invitedAt   DateTime @default(now())
+  respondedAt DateTime?
+}
+
+model Task {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String?
+  assignedTo  User   @relation("TasksAssignedTo", fields: [assignedToId], references: [id])
+  assignedToId Int
+  assignedBy  User   @relation("AssignedTasks", fields: [assignedById], references: [id])
+  assignedById Int
+  team        Team   @relation(fields: [teamId], references: [id])
+  teamId      Int
+}
+
